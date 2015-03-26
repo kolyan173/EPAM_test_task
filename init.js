@@ -29,51 +29,89 @@ $(document).ready(function() {
 			"productUrl": "/products/promo4.html"
 		}
 	];
-	
-	function buildNavPanel($item, $parent) {
-		var $slider = $parent.append('<div class="slider"></div>');
-		$item.each(function(num, element) {
-			$slider.append('<div class="item">' + num + '</div>')
-		});
-	}
 
-	function Slider(params) {
-		this.items = params.items;
-		this.state = 0;
-		this.imgDir = params.imgDir;
-		this.parent = params.parentClass;
-		this.currentItem = this.items[this.state];
-	}
+	function Slider(params) {}
 
-	Slider.prototype.itemObj = function(item) {
-		var image = [
+	Slider.prototype.itemObj = function(item, num) {
+		return [
+			'<li class="item" data-value="' + num +'">',
 			'<img src="',
+			this.imgDir,
 			item.img,
-			'">'
-		];
-		return $('.item').append()
-	}
-
-	Slider.prototype.next = function() {
-		this.currentItem = ++this.state;
+			'"/>',
+			'</li>'
+		].join('');
 	};
 
-	Slider.prototype.render = function() {
-		$('.' + this.parent).append(function() {
+	Slider.prototype.nextItem = function() {
+		if (this.state+1 < this.items.length) {
+			this.state = ++this.state;
+			return;
+		}
+		this.state = 0;
+	};
 
-		});
+	Slider.prototype.prevItem = function() {
+		// if (this.state-1 < this.items.length) {
+		// 	this.state = ++this.state;
+		// 	return;
+		// }
+		// this.state = 0;	
 	};
 
 	var slider = new Slider({
 		items: items,
-		parentClass: 'window',
-		imgDir: './public/img/'
+		parentClass: 'content',
+		imgDir: './public/img/',
+
 	});
 
-	$('.content li.one').addClass('on');
+	function View(params) {
+		this.items = params.items;
+		this.state = 0;
+		this.imgDir = params.imgDir;
+		this.parent = params.parentClass;
+		this.width = params.width;
+		this.height = params.height;
+	}
+	
+	View.prototype = Object.create(Slider.prototype);
+	
+	var view = new View({
+		items: items,
+		parentClass: 'content',
+		imgDir: './public/img/',
+		width: 312,
+		height: 200
+	});
+
+	View.prototype.renderLine = function() {
+		$('.' + this.parent).append(function() {
+			return items.map(function(element, num) {
+				return this.itemObj(element, num);
+			}.bind(this)).join('');
+		}.bind(this));
+	};
+
+	View.prototype.renderItem = function(itemClass) {
+		$('.' + this.parent + ' .' + itemClass + '[data-value=' + this.state +']')
+			.css({ "margin-top": -this.state*this.height + 'px' });
+	}
+
+	view.renderLine();
+	view.renderItem('item');
+	// $('.content li.one').addClass('on');
 		// buildNavPanel($('.content .item'), $('.app'));
-	$('button').click(function() {
-		console.log('LICK');
+	$('button.next').click(function() {
+		view.nextItem();
+		console.log(view.state);
+		view.renderItem('item');
 		$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
-	})
+	});
+
+	$('button.prev').click(function() {
+		view.prevItem();
+		view.renderItem('item');
+		$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
+	});
 });

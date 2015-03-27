@@ -29,89 +29,108 @@ $(document).ready(function() {
 			"productUrl": "/products/promo4.html"
 		}
 	];
-
-	function Slider(params) {}
-
-	Slider.prototype.itemObj = function(item, num) {
-		return [
-			'<li class="item" data-value="' + num +'">',
-			'<img src="',
-			this.imgDir,
-			item.img,
-			'"/>',
-			'</li>'
-		].join('');
-	};
-
-	Slider.prototype.nextItem = function() {
-		if (this.state+1 < this.items.length) {
-			this.state = ++this.state;
-			return;
-		}
-		this.state = 0;
-	};
-
-	Slider.prototype.prevItem = function() {
-		// if (this.state-1 < this.items.length) {
-		// 	this.state = ++this.state;
-		// 	return;
-		// }
-		// this.state = 0;	
-	};
-
-	var slider = new Slider({
-		items: items,
-		parentClass: 'content',
-		imgDir: './public/img/',
-
-	});
-
-	function View(params) {
-		this.items = params.items;
-		this.state = 0;
-		this.imgDir = params.imgDir;
-		this.parent = params.parentClass;
-		this.width = params.width;
-		this.height = params.height;
-	}
-	
-	View.prototype = Object.create(Slider.prototype);
-	
-	var view = new View({
+	var props = {
 		items: items,
 		parentClass: 'content',
 		imgDir: './public/img/',
 		width: 312,
 		height: 200
-	});
-
-	View.prototype.renderLine = function() {
-		$('.' + this.parent).append(function() {
-			return items.map(function(element, num) {
-				return this.itemObj(element, num);
-			}.bind(this)).join('');
-		}.bind(this));
 	};
 
-	View.prototype.renderItem = function(itemClass) {
-		$('.' + this.parent + ' .' + itemClass + '[data-value=' + this.state +']')
-			.css({ "margin-top": -this.state*this.height + 'px' });
+	function Controller() {
+		this.getProps = function() {
+			return Slider.prototype.props;
+		}
+	}
+	Controller.prototype = {		
+		nextItem: function() {
+			var props = this.getProps();
+			if (props.state+1 < props.items.length) {
+				props.state = ++props.state;
+				return;
+			}
+			props.state = 0;
+		},
+		prevItem: function() {
+			// if (this.state-1 < this.items.length) {
+			// 	this.state = ++this.state;
+			// 	return;
+			// }
+			// this.state = 0;	
+		}
+	};
+	
+	function View() {
+		this.getProps = function() {
+			return Slider.prototype.props;
+		}
+	}
+	View.prototype = {
+		itemObj: function(item, num) {
+			return [
+				'<li class="item" data-value="' + num +'">',
+				'<img src="',
+				this.getProps().imgDir,
+				item.img || item.field,
+				'"/>',
+				'</li>'
+			].join('');
+		},
+		renderLine: function() {
+			$('.' + this.getProps().parentClass).append(function() {
+				return items.map(function(element, num) {
+					return this.itemObj(element, num);
+				}.bind(this)).join('');
+			}.bind(this));
+		},
+		renderItem: function(itemClass) {
+			var props = this.getProps();
+			$('.' + props.parentClass + ' .' + itemClass + '[data-value=' + props.state +']')
+				.css({ "margin-top": -props.state*props.height + 'px' });
+		},
+		render: function() {
+
+		}
+	};
+
+	function Slider(test) {
+		this.test = test;
 	}
 
-	view.renderLine();
-	view.renderItem('item');
-	// $('.content li.one').addClass('on');
-		// buildNavPanel($('.content .item'), $('.app'));
-	$('button.next').click(function() {
-		view.nextItem();
-		console.log(view.state);
-		view.renderItem('item');
-		$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
-	});
+	Slider.prototype.props = {
+		items: null,
+		parentClass: null,
+		imgDir: null,
+		width: null,
+		height: null,
+		showDetails: false,
+	};
+	Slider.prototype.controller = new Controller();
+	Slider.prototype.view = new View();
+	
+	function injectProps(props, _class) {
+		_class.prototype.props = props;
+	}
 
-	$('button.prev').click(function() {
-		view.prevItem();
-		view.renderItem('item');
-		$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
-	});
+	injectProps(props, Slider);
+	var slider = new Slider('testest');
+
+	slider.view.renderLine();
+	slider.view.renderItem('item');
+
+	function actions() {
+		$('button.next').click(function() {
+			slider.controller.nextItem();
+			console.log(slider.props.state);
+			slider.view.renderItem('item');
+			$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
+		});
+
+		$('button.prev').click(function() {
+			view.prevItem();
+			view.renderItem('item');
+			$('.item.on').animate({ "margin-top": "+=50px" }, "slow" );
+		});			
+	}
+	actions();
 });

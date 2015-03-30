@@ -1,226 +1,258 @@
-(function($, f) {
+(function($) {
 	var Unslider = function() {
-
 		function looper(n, rangelength) {
-			if (n > rangelength - 1) return 0;
-			if (n < 0) return rangelength - 1;
+			var lastElement = rangelength - 1;
+			if (n > lastElement) return 0;
+			if (n < 0) return lastElement;
 			return n;
 		}
-		
+		function isOverloaded(options, limit) {
+			limit = limit || 1;
+			if (options.proccesses > limit) {
+				--options.proccesses;
+				return true;
+			}
+			return false;
+		}
+
 		this.options = {
-			speed: 500,     // animation speed, false for no transition (integer or boolean)
-			init: 0,        // init delay, false for no delay (integer or boolean)
-			arrows: f,      // display prev/next arrows (boolean)
-			prev: '&larr;', // text or html inside prev button (string)
-			next: '&rarr;', // same as for prev option
-			fluid: f,       // is it a percentage width? (boolean)
-			items: 'ul',   // slides container selector
-			item: '>li',    // slidable items selector
-			easing: 'swing',// easing function to use for animation
-			isShowDetails: false,
+			speed: 500,
+			init: 0,
+			items: 'ul',
+			item: '>li',
+			easing: 'linear',
+			isDetailsOpened: false,
 			descriptions: '>.descriptions',
 			image: '>.image',
-			imageHeight: '200px'
+			imageHeight: '200px',
+			detailsHref: '.details a',
+			detailsHrefText: {
+				hide: 'hide details',
+				show: 'show details'
+			},
+			proccesses: 0
+
 		};
 
-		this.init = function(el, params) {
+		this.init = function(element, params) {
 			this.options = $.extend(this.options, params);
 
-			this.el = el;
-			this.ul = el.find(this.options.items);
+			this.element = element;
+			this.ul = element.find(this.options.items);
 			this.li = this.ul.find(this.options.item);
 			this.descriptions = this.li.find(this.options.descriptions);
 			this.image = this.li.find(this.options.image);
-			this.i = 0,
-			target = this.li.eq(this.i);
+			this.detailsHref = this.li.find(this.options.detailsHref);
+			this.currElemIndex = 0,
+			target = this.li.eq(this.currElemIndex);
 
-			//  Cached vars	
-			var o = this.options,
-				ul = this.ul,
-				li = this.li,
-				image = this.image.eq(this.i),
-				img = image.find('img'),
-				descriptions = this.descriptions.eq(this.i);
-			// target.css({opacity: 1});
 			target.css({display: 'block'});
-			// ul.css({position: 'relative', left: 0, width: '100%'});
-			ul.css({width: '100%'});
-
-			// o.arrows && nav('arrow');
-
+			this.ul.css({width: '100%'});
 			return this;
 		};
 
 		this.to = function(index, callback) {
+			var options = this.options;
+			if (isOverloaded(options)) return;
+
 			index = looper(index, this.li.length);
-			var o = this.options,
-				li = this.li,
+			var li = this.li,
 				current = index,
-				prev = li.eq(this.i),
+				prev = li.eq(this.currElemIndex),
+				image = this.image.eq(this.currElemIndex),
+				descriptions = this.descriptions.eq(this.currElemIndex),
+				note = descriptions.find('.note'),
+				detailsHref = this.detailsHref.eq(this.currElemIndex),
 				target = li.eq(current);
 
-			var speed = callback ? 5 : o.speed | 0;
-			var easing = o.easing;
+			options.isDetailsOpened = false;
+			detailsHref.text(options.detailsHrefText.show);
+
+			var speed = options.speed;
+			var easing = options.easing;
 
 			if (!target.queue('fx').length) {
+				descriptions.css({ top: options.imageHeight });
+				note.css({ display: 'none'});
+				image.css({ visibility: 'visible', opacity: 1});
 				prev.css({ display: 'none' });
-				target.css({ display: 'inline-block', opacity: 0 });
-				
-				target.animate({opacity: 1}, speed, easing, function(data) {
-					this.i = current;
-					console.log('now', this.i);
-				}.bind(this));
+				target.css({ display: 'inline-block', opacity: 0 })
+					.animate({opacity: 1}, speed, easing, function(data) {
+						this.currElemIndex = current;
+							--options.proccesses;
+					}.bind(this));
 			};
 		};
 
 		this.next = function() {
-			return this.to(this.i + 1);
+			return this.to(this.currElemIndex + 1);
 		};
 
 		this.prev = function() {
-			return this.to(this.i - 1);
-		};
-
-		this.onShowDetails = function() {
-
+			return this.to(this.currElemIndex - 1);
 		};
 
 		this.detailsToggle = function() {
-			var descriptions = this.descriptions.eq(this.i),
+			var options = this.options;
+			if (isOverloaded(options)) return;
+
+			var descriptions = this.descriptions.eq(this.currElemIndex),
 				p_desc = descriptions.find('p'),
 				note = descriptions.find('.note'),
-				image = this.image.eq(this.i),
+				image = this.image.eq(this.currElemIndex),
 				img = image.find('img'),
-				o = this.options,
+				detailsHref = this.detailsHref.eq(this.currElemIndex),
 				desc_height = descriptions.outerHeight();
 
+			!this.options.isDetailsOpened 
+			&& detailsHref.text(options.detailsHrefText.hide) 
+			|| detailsHref.text(options.detailsHrefText.show);
+			
+			options.isDetailsOpened = !options.isDetailsOpened;
 
-			if (o.isShowDetails) {
-				descriptions.css({top: o.imageHeight });
-				descriptions.animate({ top :  0 }, o.speed, o.easing, function() {
-					note.css({ display: 'inline-block'});
-					// image.animate({ opacity: 0 }, o.speed, o.easing, function() {
-					// 	$(this).css({ visibility: 'hidden'});
-					// 	// note.animate({height: desc_height}, o.speed*0.2, o.easing);
-					// });						
-					
-				});
+			if (options.isDetailsOpened) {
+				note.css({ opacity: 1 });
+				descriptions.css({ top: options.imageHeight })
+					.animate({ top :  0 }, options.speed, options.easing, function() {
+						note.css({ display: 'inline-block'});
+						image.animate({ opacity: 0 }, options.speed, options.easing, function() {
+							--options.proccesses;
+							$(this).css({ visibility: 'hidden'});
+						});						
+						
+					});
 			} else {
-				descriptions.animate({ top :  img.outerHeight() }, o.speed, o.easing, function() {
-					// image.css({ visibility: 'visible' })
-					// 	.animate({ opacity: 1 }, o.speed, o.easing);
-					// note.animate({ opacity: 0 }, o.spped, o.easing, function() {
-					// });
+				descriptions.animate({ top :  img.outerHeight() }, options.speed, options.easing, function() {
+					image.css({ visibility: 'visible' })
+						.animate({ opacity: 1 }, options.speed, options.easing, function() {
+							--options.proccesses;
+							note.css({display: 'none'});
+						});
+					note.css({ opacity: 0 });
 				});
-				note.css({display: 'none'});
 			}
 		};
 	};
 
-	$.fn.slide = function(o) {
+	$.fn.slide = function(params) {
 		return this.each(function(index) {
-			var me = $(this),
+			var element = $(this),
 				key = 'slider',
-				instance = (new Unslider).init(me, o);
+				instance = (new Unslider).init(element, params);
 
-			//  Invoke an Unslider instance
-			me.data(key, instance).data('key', key);
+			element.data(key, instance)
+				.data('key', key);
 		});
 	};
 
-	var items = [
-		{
-			"title": "Time to Share: 6 for $3.99*",
-			"img": "comp_plate_promo1.png",
-			"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
-			"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
-			"productUrl": "/products/promo1.html"
-		},
-		{
-			"title": "Rise 'n shine",
-			"img": "comp_plate_promo2.png",
-			"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
-			"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
-			"productUrl": "/products/promo2.html"
-		},
-		{
-			"title": "PM Snackers: Brownie Bites",
-			"img": "comp_plate_promo3.png",
-			"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
-			"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
-			"productUrl": "/products/promo3.html"
-		},
-		{
-			"title": "PM Snackers: Brownie Bites new",
-			"field": "comp_plate_promo4.png",
-			"descrption": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
-			"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga. * At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.\n* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.\n* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
-			"productUrl": "/products/promo4.html"
-		}
-	];
-
 	$(document).ready(function() {
-		function bootstrap(params) {
-			// function li(content, class) {
-			// 	return [
-			// 		'<li class="' + class + '">',
-			// 		content,
-			// 		'</li>'
-			// };
-			// function img(src) {
-			// 	return '<img src="' + src + '"/>';
-			// }
-			$('.items').append(function() {
-				return items.map(function(item, num) {
-					return [
-						'<li class="item">',
-								'<div class="image">',
-									'<img class="" src="',
-										params.imgDir,
-										(item.img || item.field),
-									'"/>',
-								'</div>',
-								'<div class="descriptions">',
-									'<div class="temp_container" style="position:relative">',
-										'<h5>',
-											item.title,
-										'</h5>',
-										'<p class="description">',
-											item.description,
-										'</p>',
-										// '<br/>',
-										'<p class="note">',
-											item.note,
-										'</p>',
-									'</div>',
-								'</div>',
-								'<div class="details">',
-									'<a >show details</a>',
-								'</div>',
-						'</li>'
-					].join('');
-				}).join('');
+		var items = [
+			{
+				"title": "Time to Share: 6 for $3.99*",
+				"img": "comp_plate_promo1.png",
+				"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
+				"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
+				"productUrl": "/products/promo1.html"
+			},
+			{
+				"title": "Rise 'n shine",
+				"img": "comp_plate_promo2.png",
+				"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
+				"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
+				"productUrl": "/products/promo2.html"
+			},
+			{
+				"title": "PM Snackers: Brownie Bites",
+				"img": "comp_plate_promo3.png",
+				"description": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
+				"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
+				"productUrl": "/products/promo3.html"
+			},
+			{
+				"title": "PM Snackers: Brownie Bites new",
+				"field": "comp_plate_promo4.png",
+				"descrption": "Lorem ipsum dolor sit amet. consectetur adipisicing elit, sed do eiusmod tempor incididunt ut la bore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exefcitalion ullamoo laboris nisi ut aliquip ex ea commodo oonsequat.",
+				"note": "* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga. * At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.\n* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.\n* At vero eos et accusamus et iusto odo dtgntsslmos duclmus qui blandltlis praesentlum voluptatum delenrtl atque corruptl quos doQres et quas molestlas exceptun sint occaecatl cupidrtate non pro v dent, slmllique sunt In culpa qui otflcia deserunt mollrtia anlmi. id est la bo aim et dolorum tuga.",
+				"productUrl": "/products/promo4.html"
+			}
+		];
+
+		function bootstrapDOM(params) {
+			$('.app').append(function() {
+				return [
+					'<div class="slider_wrapper panel panel-default">',
+						'<div class="panel-body">',
+							'<ul class="items">',
+								params.items.map(function(item, num) {
+									return[
+										'<li class="item">',
+											'<div class="image">',
+												'<img src="',
+													params.imagesDirectory,
+													(item.img || item.field),
+												'"/>',
+											'</div>',
+											'<div class="descriptions">',
+												'<h5>',
+													item.title,
+												'</h5>',
+												'<p class="description">',
+													item.description,
+												'</p>',
+												'<p class="note">',
+													item.note,
+												'</p>',
+											'</div>',
+											'<div class="details">',
+												'<a class="hrefDetails">show details</a>',
+											'</div>',
+										'</li>'
+									].join('');
+								}).join(''),
+							'</ul>',
+						'</div>',
+						'<div class="panel-footer">',
+							'<a href="#" class="prev">Prev</a>',
+							'<a href="#" class="next">Next</a>',
+							'<a href="#" class="find">Find a store</a>',
+						'</div>',
+					'</div>'
+				].join('');
 			});
 		}
-		bootstrap({
-			imgDir: './public/img/'
+
+		bootstrapDOM({
+			items: items,
+			imagesDirectory: './public/img/' 
 		});
 
 		var slide = $('.slider_wrapper').slide();
 		var slideData = slide.data('slider');
 
+		$('*').click(function(e){
+			var targets = ['prev', 'next', 'hrefDetails'];
+			var predicate = targets.some(function(target) {
+				return target === e.target.className;
+			});
+			if (predicate) {
+				++slideData.options.proccesses;
+			}
+			return false;
+		});
+
 		$('a.next').click(function(){
 			slideData.next();
+			return false;
 		});
+
 		$('a.prev').click(function(){
 			slideData.prev();
+			return false;
 		});
+
 		$('.details>a').click(function(e) {
-			$(this).text('hide details');
-			slideData.options.isShowDetails = !slideData.options.isShowDetails;
-				// debugger;
 			slideData.detailsToggle();
 			return false;
 		});
 	});
-})(jQuery, false);
+})(jQuery);

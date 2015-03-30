@@ -90,6 +90,7 @@ html, body {
 .details {
 	position: absolute;
 	bottom: 0;
+	margin-left: 10px;
 }
 .details a {
 	color: rgb(255, 94, 0);

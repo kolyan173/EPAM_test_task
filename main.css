@@ -88,9 +88,11 @@ html, body {
 	overflow: hidden;
 }
 .details {
-	position: absolute;
-	bottom: 0;
-	margin-left: 10px;
+	width: 100%;
+	/*position: absolute;*/
+	/*bottom: 0;*/
+	/*margin-left: 10px;*/
+	background-color: #f5f5f5;
 }
 .details a {
 	color: rgb(255, 94, 0);

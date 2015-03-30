@@ -25,13 +25,13 @@
 			descriptions: '>.descriptions',
 			image: '>.image',
 			imageHeight: '200px',
+			details: '.details',
 			detailsHref: '.details a',
 			detailsHrefText: {
 				hide: 'hide details',
 				show: 'show details'
 			},
 			proccesses: 0
-
 		};
 
 		this.init = function(element, params) {
@@ -101,10 +101,11 @@
 				note = descriptions.find('.note'),
 				image = this.image.eq(this.currElemIndex),
 				img = image.find('img'),
+				details = descriptions.find(options.details),
 				detailsHref = this.detailsHref.eq(this.currElemIndex),
 				desc_height = descriptions.outerHeight();
 
-			!this.options.isDetailsOpened 
+			! this.options.isDetailsOpened 
 			&& detailsHref.text(options.detailsHrefText.hide) 
 			|| detailsHref.text(options.detailsHrefText.show);
 			
@@ -114,14 +115,17 @@
 				note.css({ opacity: 1 });
 				descriptions.css({ top: options.imageHeight })
 					.animate({ top :  0 }, options.speed, options.easing, function() {
+						details.css({ position: 'absolute', bottom: 0 });
 						note.css({ display: 'inline-block'});
 						image.animate({ opacity: 0 }, options.speed, options.easing, function() {
+							options.detailsOffsetTop = details.offset().top;
 							--options.proccesses;
 							$(this).css({ visibility: 'hidden'});
 						});						
 						
 					});
 			} else {
+				details.css({ position: 'fixed', bottom: '', top: options.detailsOffsetTop });
 				descriptions.animate({ top :  img.outerHeight() }, options.speed, options.easing, function() {
 					image.css({ visibility: 'visible' })
 						.animate({ opacity: 1 }, options.speed, options.easing, function() {
@@ -202,9 +206,9 @@
 												'<p class="note">',
 													item.note,
 												'</p>',
-											'</div>',
-											'<div class="details">',
-												'<a class="hrefDetails">show details</a>',
+												'<div class="details">',
+													'<a class="hrefDetails">show details</a>',
+												'</div>',
 											'</div>',
 										'</li>'
 									].join('');

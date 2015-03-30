@@ -8,7 +8,7 @@
 		}
 		
 		this.options = {
-			speed: 1000,     // animation speed, false for no transition (integer or boolean)
+			speed: 500,     // animation speed, false for no transition (integer or boolean)
 			init: 0,        // init delay, false for no delay (integer or boolean)
 			arrows: f,      // display prev/next arrows (boolean)
 			prev: '&larr;', // text or html inside prev button (string)
@@ -18,8 +18,9 @@
 			item: '>li',    // slidable items selector
 			easing: 'swing',// easing function to use for animation
 			isShowDetails: false,
-			description: '>.description',
-			image: '>.image'
+			descriptions: '>.descriptions',
+			image: '>.image',
+			imageHeight: '200px'
 		};
 
 		this.init = function(el, params) {
@@ -28,7 +29,7 @@
 			this.el = el;
 			this.ul = el.find(this.options.items);
 			this.li = this.ul.find(this.options.item);
-			this.description = this.li.find(this.options.description);
+			this.descriptions = this.li.find(this.options.descriptions);
 			this.image = this.li.find(this.options.image);
 			this.i = 0,
 			target = this.li.eq(this.i);
@@ -37,11 +38,11 @@
 			var o = this.options,
 				ul = this.ul,
 				li = this.li,
-				len = li.length;
-
+				image = this.image.eq(this.i),
+				img = image.find('img'),
+				descriptions = this.descriptions.eq(this.i);
 			// target.css({opacity: 1});
 			target.css({display: 'block'});
-
 			// ul.css({position: 'relative', left: 0, width: '100%'});
 			ul.css({width: '100%'});
 
@@ -64,6 +65,7 @@
 			if (!target.queue('fx').length) {
 				prev.css({ display: 'none' });
 				target.css({ display: 'inline-block', opacity: 0 });
+				
 				target.animate({opacity: 1}, speed, easing, function(data) {
 					this.i = current;
 					console.log('now', this.i);
@@ -79,34 +81,38 @@
 			return this.to(this.i - 1);
 		};
 
+		this.onShowDetails = function() {
+
+		};
+
 		this.detailsToggle = function() {
-			var description = this.description.eq(this.i);
-			var p_desc = description.find('p');
-			var note = description.find('.note');
-			var image = this.image.eq(this.i);
-			var img = image.find('img');
-			var o = this.options;
+			var descriptions = this.descriptions.eq(this.i),
+				p_desc = descriptions.find('p'),
+				note = descriptions.find('.note'),
+				image = this.image.eq(this.i),
+				img = image.find('img'),
+				o = this.options,
+				desc_height = descriptions.outerHeight();
 
-			this.isShowDetails = !this.isShowDetails;
 
-			if (this.isShowDetails) {
-				image.animate({ opacity: 0, height: 0 }, o.speed, o.easing, function() {
-						console.log('HERE');
-						$(this).css({ visibility: 'hidden'});
-						note.css('display', 'inline-block');
-					});
-				description.animate({ height :  img.outerHeight()}, o.speed, o.easing);
-					// debugger;
+			if (o.isShowDetails) {
+				descriptions.css({top: o.imageHeight });
+				descriptions.animate({ top :  0 }, o.speed, o.easing, function() {
+					note.css({ display: 'inline-block'});
+					// image.animate({ opacity: 0 }, o.speed, o.easing, function() {
+					// 	$(this).css({ visibility: 'hidden'});
+					// 	// note.animate({height: desc_height}, o.speed*0.2, o.easing);
+					// });						
+					
+				});
 			} else {
-				description.animate({ height : 0 }, o.spped, o.easing)
-					image.animate({ height: img.outerHeight() }, o.speed, o.easing, function() {
-						$(this).css({ visibility: 'visible' })
-							.animate({ opacity: 1 }, o.speed, o.easing);
-						// note.animate({ opacity: 0 }, o.spped, o.easing, function() {
-						note.css({ opacity: 0 });
-							/*$(this)*/note.css({display: 'none', opacity: 1});
-						// });
-					});
+				descriptions.animate({ top :  img.outerHeight() }, o.speed, o.easing, function() {
+					// image.css({ visibility: 'visible' })
+					// 	.animate({ opacity: 1 }, o.speed, o.easing);
+					// note.animate({ opacity: 0 }, o.spped, o.easing, function() {
+					// });
+				});
+				note.css({display: 'none'});
 			}
 		};
 	};
@@ -168,25 +174,29 @@
 				return items.map(function(item, num) {
 					return [
 						'<li class="item">',
-							'<div class="image"><img src="',
-								params.imgDir,
-								(item.img || item.field),
-							'"/></div>',
-							'<div class="description">',
-								'<h5>',
-									item.title,
-								'</h5>',
-									'<p class="description">',
-										item.description,
-									'</p>',
-									// '<br/>',
-									'<p class="note">',
-										item.note,
-									'</p>',
+								'<div class="image">',
+									'<img class="" src="',
+										params.imgDir,
+										(item.img || item.field),
+									'"/>',
+								'</div>',
+								'<div class="descriptions">',
+									'<div class="temp_container" style="position:relative">',
+										'<h5>',
+											item.title,
+										'</h5>',
+										'<p class="description">',
+											item.description,
+										'</p>',
+										// '<br/>',
+										'<p class="note">',
+											item.note,
+										'</p>',
+									'</div>',
+								'</div>',
 								'<div class="details">',
 									'<a >show details</a>',
 								'</div>',
-							'</div>',
 						'</li>'
 					].join('');
 				}).join('');
@@ -196,21 +206,20 @@
 			imgDir: './public/img/'
 		});
 
-		var slide = $('.slider_wrapper').slide({speed: 300});
-		
-		$('button.next').click(function(){
-			slide.data('slider')
-				.next();
+		var slide = $('.slider_wrapper').slide();
+		var slideData = slide.data('slider');
+
+		$('a.next').click(function(){
+			slideData.next();
 		});
-		$('button.prev').click(function(){
-			slide.data('slider')
-				.prev();
+		$('a.prev').click(function(){
+			slideData.prev();
 		});
 		$('.details>a').click(function(e) {
 			$(this).text('hide details');
+			slideData.options.isShowDetails = !slideData.options.isShowDetails;
 				// debugger;
-			slide.data('slider')
-				.detailsToggle();
+			slideData.detailsToggle();
 			return false;
 		});
 	});

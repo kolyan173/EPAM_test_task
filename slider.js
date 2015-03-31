@@ -25,12 +25,14 @@
 			descriptions: '>.descriptions',
 			image: '>.image',
 			imageHeight: '200px',
+			imageWidth: '312px',
 			details: '.details',
 			detailsHref: '.details a',
 			detailsHrefText: {
 				hide: 'hide details',
 				show: 'show details'
 			},
+			descriptionsPadding: '10px',
 			proccesses: 0
 		};
 
@@ -61,6 +63,7 @@
 				prev = li.eq(this.currElemIndex),
 				image = this.image.eq(this.currElemIndex),
 				descriptions = this.descriptions.eq(this.currElemIndex),
+				details = descriptions.find(options.details),
 				note = descriptions.find('.note'),
 				detailsHref = this.detailsHref.eq(this.currElemIndex),
 				target = li.eq(current);
@@ -72,11 +75,12 @@
 			var easing = options.easing;
 
 			if (!target.queue('fx').length) {
+				details.css({ position: '', bottom: '', top: ''});
 				descriptions.css({ top: options.imageHeight });
 				note.css({ display: 'none'});
 				image.css({ visibility: 'visible', opacity: 1});
 				prev.css({ display: 'none' });
-				target.css({ display: 'inline-block', opacity: 0 })
+				target.css({ display: 'block', opacity: 0 })
 					.animate({opacity: 1}, speed, easing, function(data) {
 						this.currElemIndex = current;
 							--options.proccesses;
@@ -99,10 +103,12 @@
 			var descriptions = this.descriptions.eq(this.currElemIndex),
 				p_desc = descriptions.find('p'),
 				note = descriptions.find('.note'),
+				noteWidth = note.outerWidth() - parseFloat(options.descriptionsPadding),
 				image = this.image.eq(this.currElemIndex),
 				img = image.find('img'),
 				details = descriptions.find(options.details),
 				detailsHref = this.detailsHref.eq(this.currElemIndex),
+				detailsOffsetTopInit = details.offset().top,
 				desc_height = descriptions.outerHeight();
 
 			! this.options.isDetailsOpened 
@@ -112,11 +118,18 @@
 			options.isDetailsOpened = !options.isDetailsOpened;
 
 			if (options.isDetailsOpened) {
+				details.css({ position: 'absolute', bottom: ''});
 				note.css({ opacity: 1 });
-				descriptions.css({ top: options.imageHeight })
+				details.css({ 'background-position': '-9999px -9999px'});
+				descriptions.css({top: options.imageHeight})
 					.animate({ top :  0 }, options.speed, options.easing, function() {
-						details.css({ position: 'absolute', bottom: 0 });
-						note.css({ display: 'inline-block'});
+						details.css({ 
+							top: detailsOffsetTopInit ,
+							width: noteWidth,
+							'background-position': '85% 80%',
+							height: '30px'
+						});
+						note.css({ display: 'inline-block', height: options.imageHeight });
 						image.animate({ opacity: 0 }, options.speed, options.easing, function() {
 							options.detailsOffsetTop = details.offset().top;
 							--options.proccesses;
@@ -125,11 +138,12 @@
 						
 					});
 			} else {
-				details.css({ position: 'fixed', bottom: '', top: options.detailsOffsetTop });
+				details.css({ position: 'fixed', bottom: '', top: detailsOffsetTopInit});
 				descriptions.animate({ top :  img.outerHeight() }, options.speed, options.easing, function() {
 					image.css({ visibility: 'visible' })
 						.animate({ opacity: 1 }, options.speed, options.easing, function() {
 							--options.proccesses;
+							details.css({ position: '', bottom: '', top: ''});
 							note.css({display: 'none'});
 						});
 					note.css({ opacity: 0 });
@@ -218,7 +232,7 @@
 						'<div class="panel-footer">',
 							'<a href="#" class="prev">Prev</a>',
 							'<a href="#" class="next">Next</a>',
-							'<a href="#" class="find">Find a store</a>',
+							'<a href="', item.productUrl, '" class="find">Find a store</a>',
 						'</div>',
 					'</div>'
 				].join('');

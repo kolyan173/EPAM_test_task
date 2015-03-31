@@ -48,6 +48,7 @@
 			this.currElemIndex = 0,
 			target = this.li.eq(this.currElemIndex);
 
+			target.addClass('active');
 			target.css({display: 'block'});
 			this.ul.css({width: '100%'});
 			return this;
@@ -79,6 +80,8 @@
 				descriptions.css({ top: options.imageHeight });
 				note.css({ display: 'none'});
 				image.css({ visibility: 'visible', opacity: 1});
+				prev.removeClass('active');
+				target.addClass('active');
 				prev.css({ display: 'none' });
 				target.css({ display: 'block', opacity: 0 })
 					.animate({opacity: 1}, speed, easing, function(data) {
@@ -203,7 +206,7 @@
 							'<ul class="items">',
 								params.items.map(function(item, num) {
 									return[
-										'<li class="item">',
+										'<li class="item" data-value="', num ,'">',
 											'<div class="image">',
 												'<img src="',
 													params.imagesDirectory,
@@ -232,7 +235,7 @@
 						'<div class="panel-footer">',
 							'<a href="#" class="prev">Prev</a>',
 							'<a href="#" class="next">Next</a>',
-							'<a href="', item.productUrl, '" class="find">Find a store</a>',
+							'<a href="" class="find">Find a store</a>',
 						'</div>',
 					'</div>'
 				].join('');
@@ -268,9 +271,13 @@
 			return false;
 		});
 
-		$('.details>a').click(function(e) {
+		$('.details>a').click(function() {
 			slideData.detailsToggle();
 			return false;
+		});
+
+		$('a.find').click(function(e){
+			$(this).attr('href', items[$('.active').data('value')].productUrl);
 		});
 	});
 })(jQuery);
